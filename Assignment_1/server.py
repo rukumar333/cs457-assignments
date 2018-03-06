@@ -2,9 +2,11 @@
 
 import glob
 import hashlib
-from pathlib import Path
+# from pathlib import Path
+import os
 import sys
 sys.path.append('gen-py')
+# sys.path.insert(0, glob.glob('/home/yaoliu/src_code/local/lib/lib/python2.7/site-packages/')[0])
 
 from chord import FileStore
 from chord.ttypes import SystemException, RFileMetadata, RFile, NodeID
@@ -29,8 +31,11 @@ class FileStoreHandler:
             self.files[rFile.meta.contentHash] = rFile.meta
             # next line is in case a version was sent from the client
             self.files[rFile.meta.contentHash].version = 0
-        server_file = Path(rFile.meta.owner + '_' + rFile.meta.filename)
-        server_file.write_text(rFile.content)
+        file_name = rFile.meta.owner + '_' + rFile.meta.filename
+        with open(file_name, 'w') as server_file:
+            server_file.write(rFile.content)
+        # server_file = Path(rFile.meta.owner + '_' + rFile.meta.filename)
+        # server_file.write_text(rFile.content)
 
     def readFile(self, filename, owner):
         print('readFile')
@@ -38,8 +43,10 @@ class FileStoreHandler:
         hash_input = hash_input.encode('utf-8')
         file_hash = hashlib.sha256(hash_input).hexdigest()
         if file_hash in self.files:
+            file_name = owner + '_' + filename
             rFile = RFile()
-            rFile.content = Path(owner + '_' + filename).read_text()
+            with open(file_name, 'r') as server_file:
+                rFile.content = server_file.read()
             rFile.meta = self.files[file_hash]
             print('Returning file:')
             print(rFile)

@@ -4,6 +4,7 @@ import glob
 import hashlib
 import sys
 sys.path.append('gen-py')
+# sys.path.insert(0, glob.glob('/home/yaoliu/src_code/local/lib/lib/python2.7/site-packages/')[0])
 
 from chord import FileStore
 from chord.ttypes import SystemException, RFileMetadata, RFile, NodeID
