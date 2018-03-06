@@ -2,6 +2,7 @@
 
 import glob
 import hashlib
+import logging
 import sys
 sys.path.append('gen-py')
 # sys.path.insert(0, glob.glob('/home/yaoliu/src_code/local/lib/lib/python2.7/site-packages/')[0])
@@ -13,6 +14,8 @@ from thrift import Thrift
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
+
+logging.basicConfig(level=logging.DEBUG)
 
 def main():
     # Make socket
@@ -34,18 +37,21 @@ def main():
     meta_data = RFileMetadata()
     meta_data.filename = 'test.txt'
     # meta_data.version = 0
-    meta_data.owner = 'rushil'
+    meta_data.owner = 'asma'
     hash_input = meta_data.owner + ':' + meta_data.filename
     hash_input = hash_input.encode('utf-8')
     meta_data.contentHash = hashlib.sha256(hash_input).hexdigest()
     rFile.content = 'Hello world!'
     rFile.meta = meta_data
-    client.writeFile(rFile)
+    # client.writeFile(rFile)
+    node_owner = client.findSucc(rFile.meta.contentHash)
+    print('Node owner:')
+    print(node_owner)
 
-    read_rFile = client.readFile('test.txt', 'rushil')
-    print(type(read_rFile))
-    print('Read file content: {}'.format(read_rFile.content))
-    print('Version: {}'.format(read_rFile.meta.version))
+    # read_rFile = client.readFile('test.txt', 'rushil')
+    # print(type(read_rFile))
+    # print('Read file content: {}'.format(read_rFile.content))
+    # print('Version: {}'.format(read_rFile.meta.version))
 
     # Close!
     transport.close()
