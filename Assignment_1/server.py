@@ -56,11 +56,12 @@ class FileStoreHandler:
             exception.message = 'File {} owned by {} does not exist!'.format(filename, owner)
             raise exception
 
-    def setFingerTable(self, node_list):
-        print('setFingerTable')
-        self.finger_tabel = node_list
-        print('Inputed finger table:')
-        print(node_list)
+    def setFingertable(self, node_list):
+        print('setFingertable')
+        self.finger_table = node_list
+        print('Length of fingertable: {}'.format(len(node_list)))
+        # print('Inputed finger table:')
+        # print(node_list)
 
     def findSucc(self, key):
         print('findSucc')
