@@ -32,7 +32,7 @@ def main():
     rFile = RFile()
     meta_data = RFileMetadata()
     meta_data.filename = 'test.txt'
-    meta_data.version = 0
+    # meta_data.version = 0
     meta_data.owner = 'rushil'
     hash_input = meta_data.owner + ':' + meta_data.filename
     hash_input = hash_input.encode('utf-8')
@@ -42,6 +42,9 @@ def main():
     client.writeFile(rFile)
 
     read_rFile = client.readFile('test.txt', 'rushil')
+    print(type(read_rFile))
+    print('Read file content: {}'.format(read_rFile.content))
+    print('Version: {}'.format(read_rFile.meta.version))
 
     # Close!
     transport.close()
