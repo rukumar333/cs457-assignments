@@ -2,6 +2,7 @@
 import glob
 import hashlib
 import logging
+import socket
 import sys
 sys.path.append('gen-py')
 # sys.path.insert(0, glob.glob('/home/yaoliu/src_code/local/lib/lib/python2.7/site-packages/')[0])
@@ -21,6 +22,8 @@ class FileStoreHandler:
         self.log = {}
         self.files = {}
         self.finger_table = []
+        self.node_id = NodeID()
+        self.node_id.ip = socket.gethostbyname(socket.gethostname())
 
     def writeFile(self, rFile):
         print('writeFile')
@@ -83,9 +86,9 @@ class FileStoreHandler:
         next_node = None
         key_num = int(key, 16)
         if self.finger_table:
-            if int(self.finger_table[0].id, 16) > key_num:
+            if int(self.finger_table[0].id, 16) >= key_num and int(self.node_id.id, 16) < key_num:
                 # Means current node is predecessor
-                return None
+                return self.node_id
             for node in self.finger_table:
                 if next_node is not None and (int(node.id, 16) > key_num or \
                    int(next_node.id, 16) > int(node.id, 16)):
@@ -101,10 +104,11 @@ class FileStoreHandler:
             transport.open()
             predecessor_node = client.findPred(key)
             transport.close()
-            if predecessor_node == None:
-                return next_node
-            else:
-                return predecessor_node
+            return predecessor_node
+            # if predecessor_node == None:
+            #     return next_node
+            # else:
+            #     return predecessor_node
         else:
             exception = SystemException()
             exception.message = 'Node does not have a fingertable!'
@@ -129,6 +133,13 @@ if __name__ == '__main__':
     sys.stdout = file_stdout
 
     handler = FileStoreHandler()
+    handler.node_id.port = port_num
+    hash_input = handler.node_id.ip + ':' + str(handler.node_id.port)
+    hash_input = hash_input.encode('utf-8')
+    handler.node_id.id = hashlib.sha256(hash_input).hexdigest()
+    print('Node info:')
+    print('IP: {}'.format(handler.node_id.ip))
+    print('ID: {}'.format(handler.node_id.id))
     processor = FileStore.Processor(handler)
     transport = TSocket.TServerSocket(port=port_num)
     tfactory = TTransport.TBufferedTransportFactory()
