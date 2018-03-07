@@ -17,6 +17,14 @@ from thrift.server import TServer
 
 logging.basicConfig(level=logging.DEBUG)
 
+def is_between(begin, end, key):
+    if begin < end:
+        return key > begin and key <= end
+    elif end < begin:
+        return key > begin or key <= end
+    else:
+        return False
+
 class FileStoreHandler:
     def __init__(self):
         self.log = {}
@@ -68,7 +76,8 @@ class FileStoreHandler:
         predecessor_node = self.findPred(key)
         print('Predecessor node found:')
         print(predecessor_node)
-        if predecessor_node is not None: # Current node is predeccesor
+        if predecessor_node is not self.node_id: # Another node is predeccesor
+            assert predecessor_node.id != self.node_id.id
             transport = TSocket.TSocket(predecessor_node.ip, predecessor_node.port)
             transport = TTransport.TBufferedTransport(transport)
             protocol = TBinaryProtocol.TBinaryProtocol(transport)
@@ -77,7 +86,7 @@ class FileStoreHandler:
             owner_node = client.getNodeSucc()
             transport.close()
             return owner_node
-        else: # Another node is predecessor
+        else: # Current node is predecessor
             owner_node = self.getNodeSucc()
             return owner_node
 
@@ -86,16 +95,23 @@ class FileStoreHandler:
         next_node = None
         key_num = int(key, 16)
         if self.finger_table:
-            if int(self.finger_table[0].id, 16) >= key_num and int(self.node_id.id, 16) < key_num:
+            if is_between(int(self.node_id.id, 16), int(self.finger_table[0].id, 16), key_num):
+                print('Checking if current node is predeccesor')
                 # Means current node is predecessor
+                # Base case
                 return self.node_id
+            found_predecessor = False
             for node in self.finger_table:
-                if next_node is not None and (int(node.id, 16) > key_num or \
-                   int(next_node.id, 16) > int(node.id, 16)):
-                    # Current node succeeds key or previous node succeeds current node
+                print('Checking if key is between nodes in fingertable')
+                if next_node is not None and is_between(int(next_node.id, 16), \
+                                                        int(node.id, 16), key_num):
+                    found_predecessor = True
                     break
                 next_node = node
-            assert next_node is not None
+            if found_predecessor is False:
+                # Node was not in between any two nodes in finger table. Need to check last node then
+                next_node = self.finger_table[-1]
+            assert next_node.id != self.node_id.id
             print('Next node port: {}'.format(next_node.port))
             transport = TSocket.TSocket(next_node.ip, next_node.port)
             transport = TTransport.TBufferedTransport(transport)
@@ -105,10 +121,6 @@ class FileStoreHandler:
             predecessor_node = client.findPred(key)
             transport.close()
             return predecessor_node
-            # if predecessor_node == None:
-            #     return next_node
-            # else:
-            #     return predecessor_node
         else:
             exception = SystemException()
             exception.message = 'Node does not have a fingertable!'

@@ -37,7 +37,7 @@ def main():
     meta_data = RFileMetadata()
     meta_data.filename = 'test.txt'
     # meta_data.version = 0
-    meta_data.owner = 'asma'
+    meta_data.owner = 'rushil'
     hash_input = meta_data.owner + ':' + meta_data.filename
     hash_input = hash_input.encode('utf-8')
     meta_data.contentHash = hashlib.sha256(hash_input).hexdigest()
@@ -45,6 +45,8 @@ def main():
     rFile.meta = meta_data
     # client.writeFile(rFile)
     node_owner = client.findSucc(rFile.meta.contentHash)
+    print('File:')
+    print(rFile)
     print('Node owner:')
     print(node_owner)
 
