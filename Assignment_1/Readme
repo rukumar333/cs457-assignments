@@ -1,0 +1,15 @@
+Used python 2.7 and thrift pip package for python
+Generated gen-py using chord.thrift.
+
+server.sh runs 'python server.py $1'
+
+Run server using:
+./server.sh PORT_NUM
+Ex:
+./server.sh 9090
+
+If no port is specified, server will try to run on port 9090.
+server.py has a global variable LOG_TO_FILE which will output all print statements to
+a log file if True. If False, then print statements will be sent to stdout.
+
+No makefile is required since nothing is compiled.

@@ -1,7 +1,7 @@
 #!/usr/bin/zsh
 
-python server.py 9090&
-python server.py 9091&
-python server.py 9092&
-python server.py 9093&
+./server.sh 9090&
+./server.sh 9091&
+./server.sh 9092&
+./server.sh 9093&
 python init node.txt
