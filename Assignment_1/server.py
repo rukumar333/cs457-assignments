@@ -91,7 +91,7 @@ class FileStoreHandler:
         print('setFingertable')
         self.finger_table = node_list
         print('Length of fingertable: {}'.format(len(node_list)))
-        print(self.finger_table)
+        # print(self.finger_table)
 
     def findSucc(self, key):
         print('findSucc')
@@ -117,8 +117,8 @@ class FileStoreHandler:
         next_node = None
         key_num = int(key, 16)
         if self.finger_table:
+            print('Checking if current node is predeccesor')
             if is_between(int(self.node_id.id, 16), int(self.finger_table[0].id, 16), key_num):
-                print('Checking if current node is predeccesor')
                 # Means current node is predecessor
                 # Base case
                 return self.node_id
@@ -135,7 +135,7 @@ class FileStoreHandler:
                 print('Using last node in finger table')
                 next_node = self.finger_table[-1]
             assert next_node.id != self.node_id.id
-            print('Next node port: {}'.format(next_node.port))
+            print('Next node {}:{}'.format(next_node.ip, next_node.port))
             transport = TSocket.TSocket(next_node.ip, next_node.port)
             transport = TTransport.TBufferedTransport(transport)
             protocol = TBinaryProtocol.TBinaryProtocol(transport)
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     hash_input = hash_input.encode('utf-8')
     handler.node_id.id = hashlib.sha256(hash_input).hexdigest()
     print('Node info:')
-    print('IP: {}'.format(handler.node_id.ip))
+    print('IP:Port {}:{}'.format(handler.node_id.ip, handler.node_id.port))
     print('ID: {}'.format(handler.node_id.id))
     processor = FileStore.Processor(handler)
     transport = TSocket.TServerSocket(port=port_num)

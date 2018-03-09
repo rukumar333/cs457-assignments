@@ -194,10 +194,19 @@ def test_findPred(list_clients):
             pred_node = client[0].findPred(contentHash)
             assert pred_client[2] == pred_node.id
 
+def test_getNodeSucc(list_clients):
+    list_clients.sort(key=lambda client: int(client[2], 16))
+    for i in range(len(list_clients)):
+        succ_node = list_clients[i][0].getNodeSucc()
+        if i < len(list_clients) - 1:
+            assert succ_node.id == list_clients[i + 1][2]
+        else:
+            assert succ_node.id == list_clients[0][2]
+
     for client in list_clients:
         client[0].setFingertable(list())
         try:
-            pred_node = client[0].findPred('a')
+            succ_node = client[0].getNodeSucc()
             assert False
         except SystemException as e:
             print(e)
