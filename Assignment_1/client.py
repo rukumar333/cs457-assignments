@@ -5,6 +5,9 @@ import hashlib
 import logging
 import sys
 sys.path.append('gen-py')
+remote_packages = glob.glob('/home/yaoliu/src_code/local/lib/lib/python2.7/site-packages/')
+if len(remote_packages) > 0:
+    sys.path.insert(0, remote_packages[0])
 # sys.path.insert(0, glob.glob('/home/yaoliu/src_code/local/lib/lib/python2.7/site-packages/')[0])
 
 from chord import FileStore
