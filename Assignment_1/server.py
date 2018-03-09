@@ -36,12 +36,26 @@ class FileStoreHandler:
     def writeFile(self, rFile):
         print('writeFile')
         print('Content: {}'.format(rFile.content))
+        if not rFile.meta.contentHash:
+            hash_input = rFile.meta.owner + ':' + rFile.meta.filename
+            hash_input = hash_input.encode('utf-8')
+            rFile.meta.contentHash = hashlib.sha256(hash_input).hexdigest()
+        owner_node = self.findSucc(rFile.meta.contentHash)
+        if owner_node.id != self.node_id.id:
+            exception = SystemException()
+            exception.message = 'Node {}:{} does not own file {}:{}'.format(self.node_id.ip, \
+                                                                            self.node_id.port, \
+                                                                            rFile.meta.owner, \
+                                                                            rFile.meta.filename)
+            raise exception
         if rFile.meta.contentHash in self.files:
             self.files[rFile.meta.contentHash].version += 1
         else:
             self.files[rFile.meta.contentHash] = rFile.meta
             # next line is in case a version was sent from the client
             self.files[rFile.meta.contentHash].version = 0
+        print('Meta data:')
+        print(self.files[rFile.meta.contentHash])
         file_name = rFile.meta.owner + '_' + rFile.meta.filename
         with open(file_name, 'w') as server_file:
             server_file.write(rFile.content)
@@ -51,6 +65,14 @@ class FileStoreHandler:
         hash_input = owner + ':' + filename
         hash_input = hash_input.encode('utf-8')
         file_hash = hashlib.sha256(hash_input).hexdigest()
+        owner_node = self.findSucc(file_hash)
+        if owner_node.id != self.node_id.id:
+            exception = SystemException()
+            exception.message = 'Node {}:{} does not own file {}:{}'.format(self.node_id.ip, \
+                                                                            self.node_id.port, \
+                                                                            owner, \
+                                                                            filename)
+            raise exception
         if file_hash in self.files:
             file_name = owner + '_' + filename
             rFile = RFile()
@@ -101,8 +123,8 @@ class FileStoreHandler:
                 # Base case
                 return self.node_id
             found_predecessor = False
+            print('Checking if key is between nodes in fingertable')
             for node in self.finger_table:
-                print('Checking if key is between nodes in fingertable')
                 if next_node is not None and is_between(int(next_node.id, 16), \
                                                         int(node.id, 16), key_num):
                     found_predecessor = True
@@ -110,6 +132,7 @@ class FileStoreHandler:
                 next_node = node
             if found_predecessor is False:
                 # Node was not in between any two nodes in finger table. Need to check last node then
+                print('Using last node in finger table')
                 next_node = self.finger_table[-1]
             assert next_node.id != self.node_id.id
             print('Next node port: {}'.format(next_node.port))
@@ -119,11 +142,14 @@ class FileStoreHandler:
             client = FileStore.Client(protocol)
             transport.open()
             predecessor_node = client.findPred(key)
+            print('Node returned fron next node:')
+            print(predecessor_node)
             transport.close()
             return predecessor_node
         else:
             exception = SystemException()
-            exception.message = 'Node does not have a fingertable!'
+            exception.message = 'Node {}:{} does not have a fingertable!'.format(self.node_id.ip, \
+                                                                                 self.node_id.port)
             raise exception
 
     def getNodeSucc(self):
@@ -132,7 +158,8 @@ class FileStoreHandler:
             return self.finger_table[0]
         else:
             exception = SystemException()
-            exception.message = 'Node does not have a fingertable!'
+            exception.message = 'Node {}:{} does not have a fingertable!'.format(self.node_id.ip, \
+                                                                                 self.node_id.port)
             raise exception
 
 if __name__ == '__main__':
@@ -158,7 +185,8 @@ if __name__ == '__main__':
     pfactory = TBinaryProtocol.TBinaryProtocolFactory()
 
     print('Starting server on port: {}'.format(port_num))
-    server = TServer.TSimpleServer(processor, transport, tfactory, pfactory)
+    # server = TServer.TSimpleServer(processor, transport, tfactory, pfactory)
+    server = TServer.TThreadedServer(processor, transport, tfactory, pfactory)
     server.serve()
     print('Ended server')
     file_stdout.close()
