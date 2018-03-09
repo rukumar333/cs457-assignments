@@ -17,6 +17,8 @@ from thrift.server import TServer
 
 logging.basicConfig(level=logging.DEBUG)
 
+LOG_TO_FILE = True
+
 def is_between(begin, end, key):
     if begin < end:
         return key > begin and key <= end
@@ -167,15 +169,17 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         port_num = int(sys.argv[1])
 
-    orig_stdout = sys.stdout
-    file_stdout = open('log_' + str(port_num) + '.txt', 'w', 0)
-    sys.stdout = file_stdout
-
     handler = FileStoreHandler()
     handler.node_id.port = port_num
     hash_input = handler.node_id.ip + ':' + str(handler.node_id.port)
     hash_input = hash_input.encode('utf-8')
     handler.node_id.id = hashlib.sha256(hash_input).hexdigest()
+
+    orig_stdout = sys.stdout
+    if LOG_TO_FILE:
+        file_stdout = open('log_{}_{}.txt'.format(handler.node_id.ip, handler.node_id.port), 'w', 0)
+        sys.stdout = file_stdout
+
     print('Node info:')
     print('IP:Port {}:{}'.format(handler.node_id.ip, handler.node_id.port))
     print('ID: {}'.format(handler.node_id.id))
