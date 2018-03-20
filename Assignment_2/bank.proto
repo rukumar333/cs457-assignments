@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package bank;
+
 message InitBranch {
   uint32 balance=1;
 
