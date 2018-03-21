@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import logging
 import SocketServer
 import socket
 import struct
@@ -8,6 +9,10 @@ from threading import Thread, Lock
 import time
 
 import bank_pb2
+
+logging.basicConfig(level=logging.DEBUG)
+
+LOG_TO_FILE = True
 
 bank = None
 
@@ -20,12 +25,17 @@ class Bank(object):
         self.money_mutex = Lock()
 
     def init_branch(self, message):
+        print('init_branch')
         self.money = message.balance
-        self.branches = message.branches
-        for branch in message.branches:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect((message.ip, message.port))
-            self.sockets.push_back(sock)
+        print('Money set: {}'.format(self.money))
+        self.branches = message.all_branches
+        for branch in message.all_branches:
+            print(branch.name)
+            print(branch.ip)
+            print(branch.port)
+            # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # sock.connect((message.ip, message.port))
+            # self.sockets.push_back(sock)
 
     def transfer(self, message):
         print('transfer')
@@ -69,7 +79,17 @@ class BankTCPHandler(SocketServer.StreamRequestHandler):
 if __name__ == '__main__':
     bank = Bank()
     port = 9090
-    if len(sys.argv) > 1:
-        port = int(sys.argv[1])
-    server = SocketServer.ThreadingTCPServer(('127.0.0.1', port), BankTCPHandler)
+    host = socket.gethostbyname(socket.gethostname())
+    name = None
+    if len(sys.argv) < 3:
+        print('Need more arguments')
+        sys.exit(-1)
+    else:
+        name = sys.argv[1]
+        port = int(sys.argv[2])
+    if LOG_TO_FILE:
+        file_stdout = open('log_{}.txt'.format(port), 'w', 0)
+        sys.stdout = file_stdout
+    server = SocketServer.ThreadingTCPServer((host, port), BankTCPHandler)
     server.serve_forever()
+
