@@ -65,6 +65,7 @@ class Bank(object):
     # Message funcs
     def init_branch(self, message):
         print('init_branch')
+        self.balance_mutex.acquire()
         self.balance = message.balance
         print('Money set: {}'.format(self.balance))
         self.branches = message.all_branches
@@ -76,6 +77,7 @@ class Bank(object):
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.connect((branch.ip, branch.port))
                 self.sockets.append((sock, Lock(), branch.name))
+        self.balance_mutex.release()
         if self.name == 'branch0':
             thread = Thread(target=self.send_money)
             thread.start()
@@ -86,7 +88,7 @@ class Bank(object):
         self.balance_mutex.acquire()
         self.balance = self.balance + message.money
         # Check if snapshot required listening on channels
-        for key, val in self.channel_states:
+        for _, val in self.channel_states.iteritems():
             channel_index = self.get_branch_index(message.branch_name)
             if val[channel_index] is not None: # Means channel is set to empty
                 val[channel_index] += message.money
