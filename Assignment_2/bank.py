@@ -113,11 +113,11 @@ class Bank(object):
         self.snapshots[message.snapshot_id] = (stored_snapshot, True)
         self.channel_states[message.snapshot_id] = [0 for _ in range(len(self.branches))]
         self.balance_mutex.release()
-        message = bank_pb2.BranchMessage()
-        message.marker.MergeFrom(marker)
+        new_message = bank_pb2.BranchMessage()
+        new_message.marker.MergeFrom(marker)
         for sock in self.sockets:
             sock[1].acquire()
-            self.message_socket(sock[0], message)
+            self.message_socket(sock[0], new_message)
             sock[1].release()
 
     def marker(self, message):
@@ -130,8 +130,8 @@ class Bank(object):
 
             # Copy over values from channel states to snapshot
             for i in range(len(self.channel_states[message.snapshot_id])):
-                if self.channel_states[message.snapshot_id] is not None:
-                    self.snapshots[message.snapshot_id]\
+                if self.channel_states[message.snapshot_id][i] is not None:
+                    self.snapshots[message.snapshot_id][0]\
                         .local_snapshot.channel_state[i] = self.channel_states[message.snapshot_id][i]
             # Stop listening to channel
             channel_index = self.get_branch_index(message.branch_name)
@@ -158,23 +158,23 @@ class Bank(object):
             incoming_channel_index = self.get_branch_index(message.branch_name)
             # Set incoming channel as empty for snapshot
             self.channel_states[message.snapshot_id][incoming_channel_index] = None
-            message = bank_pb2.BranchMessage()
-            message.marker.MergeFrom(marker)
+            new_message = bank_pb2.BranchMessage()
+            new_message.marker.MergeFrom(marker)
             for sock in self.sockets:
-                # Make sure to not 
-                if sock[2] != message.branch_name:
-                    sock[1].acquire()
-                    self.message_socket(sock[0], message)
-                    sock[1].release()
+                # # Make sure to not send marker
+                # if sock[2] != message.branch_name:
+                sock[1].acquire()
+                self.message_socket(sock[0], new_message)
+                sock[1].release()
             self.balance_mutex.release()
 
     def retrieve_snapshot(self, message, client):
         print('retrieve_snapshot')
         snapshot = self.snapshots[message.snapshot_id][0]
-        message = bank_pb2.BranchMessage()
-        message.return_snapshot.CopyFrom(snapshot)
+        neW_message = bank_pb2.BranchMessage()
+        new_message.return_snapshot.CopyFrom(snapshot)
         print('Messaging socket')
-        message_string = message.SerializeToString()
+        message_string = new_message.SerializeToString()
         print(len(message_string))
         client.write(struct.pack('H', len(message_string)))
         client.write(message_string)
