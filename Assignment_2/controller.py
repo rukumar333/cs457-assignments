@@ -3,6 +3,7 @@
 import socket
 import struct
 import sys
+import time
 
 import bank_pb2
 
@@ -16,9 +17,13 @@ import bank_pb2
 #     sock.sendall(struct.pack('H', len(message_string)))
 #     sock.sendall(message_string)
 
+snapshot_id = 0
+sockets = []
+
 def message_socket(sock, message):
     print('Messaging socket')
     message_string = message.SerializeToString()
+    print(len(message_string))
     sock.sendall(struct.pack('H', len(message_string)))
     sock.sendall(message_string)
 
@@ -41,7 +46,20 @@ def initialize_bank(money, branches_file):
             print(branch.port)
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.connect((branch.ip, branch.port))
+            sockets.append((sock, branch.port))
             message_socket(sock, message)
+
+def initialize_snapshot(snapshot_id):
+    init = bank_pb2.InitSnapshot()
+    init.snapshot_id = snapshot_id
+    message = bank_pb2.BranchMessage()
+    message.init_snapshot.MergeFrom(init)
+    print(message.WhichOneof('branch_message'))
+    print('Starting on socket: {}'.format(sockets[0][1]))
+    message_socket(sockets[0][0], message)
+
+# def transfer_money():
+    
         
 
 if __name__ == '__main__':
@@ -49,7 +67,11 @@ if __name__ == '__main__':
         print('Need more arguments')
         sys.exit(-1)
     else:
+        print(snapshot_id)
         initialize_bank(int(sys.argv[1]), sys.argv[2])
+        time.sleep(3)
+        initialize_snapshot(snapshot_id)
+        snapshot_id = snapshot_id + 1
         
     # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # try:
