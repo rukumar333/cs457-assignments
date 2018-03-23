@@ -21,9 +21,9 @@ snapshot_id = 0
 sockets = []
 
 def message_socket(sock, message):
-    print('Messaging socket')
+    # print('Messaging socket')
     message_string = message.SerializeToString()
-    print(len(message_string))
+    # print(len(message_string))
     sock.sendall(struct.pack('H', len(message_string)))
     sock.sendall(message_string)
 
@@ -79,6 +79,7 @@ def get_snapshot(snapshot_id, connections, money):
     message = bank_pb2.BranchMessage()
     message.retrieve_snapshot.MergeFrom(retrieve)
     total = 0
+    print('snapshot_id: {}'.format(snapshot_id))
     for sock in connections:
         print('Port: {}'.format(sock[1]))
         message_socket(sock[0], message)
@@ -115,8 +116,8 @@ if __name__ == '__main__':
         time.sleep(3)
         for x in range(200):
             initialize_snapshot(x)
+        time.sleep(10)
         for x in range(200):
-            time.sleep(1)
             get_snapshot(x, sockets, init_amt)
         # while snapshot_id < 50:
         #     initialize_snapshot(snapshot_id)

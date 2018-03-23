@@ -31,9 +31,9 @@ class Bank(object):
 
     # Utility funcs
     def message_socket(self, sock, message):
-        print('Messaging socket')
+        # print('Messaging socket')
         message_string = message.SerializeToString()
-        print(len(message_string))
+        # print(len(message_string))
         sock.sendall(struct.pack('H', len(message_string)))
         sock.sendall(message_string)
 
@@ -141,6 +141,7 @@ class Bank(object):
         else:
             # First time seeing snapshot_id
             print('snapshot_id: {}'.format(message.snapshot_id))
+            print('From: {}'.format(message.branch_name))
             # Set marker
             marker = bank_pb2.Marker()
             marker.branch_name = self.name
