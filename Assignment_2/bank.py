@@ -78,9 +78,9 @@ class Bank(object):
                 sock.connect((branch.ip, branch.port))
                 self.sockets.append((sock, Lock(), branch.name))
         self.balance_mutex.release()
-        if self.name == 'branch0':
-            thread = Thread(target=self.send_money)
-            thread.start()
+        # if self.name == 'branch0':
+        thread = Thread(target=self.send_money)
+        thread.start()
 
     def transfer(self, message):
         print('transfer')
@@ -173,7 +173,7 @@ class Bank(object):
     def retrieve_snapshot(self, message, client):
         print('retrieve_snapshot')
         snapshot = self.snapshots[message.snapshot_id][0]
-        neW_message = bank_pb2.BranchMessage()
+        new_message = bank_pb2.BranchMessage()
         new_message.return_snapshot.CopyFrom(snapshot)
         print('Messaging socket')
         message_string = new_message.SerializeToString()
