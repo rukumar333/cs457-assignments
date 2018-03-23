@@ -39,23 +39,27 @@ class Bank(object):
 
     def send_money(self):
         while True:
-            time_to_sleep = int(random.uniform(0, 5))
+            time_to_sleep = random.uniform(0, 0.01)
+            # time_to_sleep = 0
             print('Sleeping for: {}'.format(time_to_sleep))
             time.sleep(time_to_sleep)
+            socket_index = random.randint(0, len(self.sockets) - 1)
             self.balance_mutex.acquire()
             amount = int((random.uniform(0.01, 0.05) * self.balance))
             self.balance = self.balance - amount
             assert self.balance >= 0
-            self.balance_mutex.release()
+            # self.balance_mutex.release()
             print('Sending: {}'.format(amount))
+            print('Remaining: {}'.format(self.balance))
             transfer = bank_pb2.Transfer()
             transfer.money = amount
             transfer.branch_name = self.name
             message = bank_pb2.BranchMessage()
             message.transfer.MergeFrom(transfer)
-            self.sockets[2][1].acquire()
-            self.message_socket(self.sockets[2][0], message)
-            self.sockets[2][1].release()
+            self.sockets[socket_index][1].acquire()
+            self.message_socket(self.sockets[socket_index][0], message)
+            self.sockets[socket_index][1].release()
+            self.balance_mutex.release()
 
     def get_branch_index(self, name):
         for i in range(len(self.branches)):
@@ -83,9 +87,10 @@ class Bank(object):
         thread.start()
 
     def transfer(self, message):
+        self.balance_mutex.acquire()
         print('transfer')
         # Lock to make sure no conflict with init_snapshot
-        self.balance_mutex.acquire()
+        # self.balance_mutex.acquire()
         self.balance = self.balance + message.money
         # Check if snapshot required listening on channels
         for _, val in self.channel_states.iteritems():
@@ -96,6 +101,7 @@ class Bank(object):
         print('New total: {}'.format(self.balance))
 
     def init_snapshot(self, message):
+        self.balance_mutex.acquire()
         print('snapshot_id: {}'.format(message.snapshot_id))
         # Set marker
         marker = bank_pb2.Marker()
@@ -105,7 +111,7 @@ class Bank(object):
         stored_snapshot = bank_pb2.ReturnSnapshot()
         stored_snapshot.local_snapshot.snapshot_id = message.snapshot_id
         # Lock to make sure init_snapshot does not conflict with transfer
-        self.balance_mutex.acquire()
+        # self.balance_mutex.acquire()
         # Set balance of local snapshot and default value channel_states
         stored_snapshot.local_snapshot.balance = self.balance
         stored_snapshot.local_snapshot.channel_state[:] = [0 for _ in range(len(self.branches))]
@@ -114,23 +120,25 @@ class Bank(object):
         # Store local snapshot which means it has seen snapshot_id
         self.snapshots[message.snapshot_id] = (stored_snapshot, True)
         self.channel_states[message.snapshot_id] = [0 for _ in range(len(self.branches))]
-        self.balance_mutex.release()
         new_message = bank_pb2.BranchMessage()
         new_message.marker.MergeFrom(marker)
         for sock in self.sockets:
             sock[1].acquire()
             self.message_socket(sock[0], new_message)
             sock[1].release()
+        self.balance_mutex.release()
 
     def marker(self, message):
+        self.balance_mutex.acquire()
         print('marker')
         if message.snapshot_id in self.snapshots:
             print('Already seen')
-            # Already saw snapshot_id
+            # Already saw snapshot_idOB
             # Should be nothing to do but might have to fix this
             # Need to mark channel empty
 
             # Copy over values from channel states to snapshot
+            # self.balance_mutex.acquire()
             for i in range(len(self.channel_states[message.snapshot_id])):
                 if self.channel_states[message.snapshot_id][i] is not None:
                     self.snapshots[message.snapshot_id][0]\
@@ -138,6 +146,7 @@ class Bank(object):
             # Stop listening to channel
             channel_index = self.get_branch_index(message.branch_name)
             self.channel_states[message.snapshot_id][channel_index] = None
+            self.balance_mutex.release()
         else:
             # First time seeing snapshot_id
             print('snapshot_id: {}'.format(message.snapshot_id))
@@ -149,7 +158,7 @@ class Bank(object):
             # Create local snapshot to send later
             stored_snapshot = bank_pb2.ReturnSnapshot()
             stored_snapshot.local_snapshot.snapshot_id = message.snapshot_id
-            self.balance_mutex.acquire()
+            # self.balance_mutex.acquire()
             # Set balance of local snapshot and default value channel_states
             stored_snapshot.local_snapshot.balance = self.balance
             stored_snapshot.local_snapshot.channel_state[:] = [0 for _ in range(len(self.branches))]
@@ -173,6 +182,9 @@ class Bank(object):
 
     def retrieve_snapshot(self, message, client):
         print('retrieve_snapshot')
+        if message.snapshot_id not in self.snapshots:
+            print('Did not finish snapshot: {}'.format(message.snapshot_id))
+            return
         snapshot = self.snapshots[message.snapshot_id][0]
         new_message = bank_pb2.BranchMessage()
         new_message.return_snapshot.CopyFrom(snapshot)
@@ -198,7 +210,7 @@ class BankTCPHandler(SocketServer.StreamRequestHandler):
         # print(self.data)
         # self.wfile.write('Received data!')
         while True:
-            print('Received data')
+            # print('Received data')
             initial_data = self.rfile.read(2)
             if not initial_data:
                 break
@@ -207,7 +219,7 @@ class BankTCPHandler(SocketServer.StreamRequestHandler):
             message = bank_pb2.BranchMessage()
             message.ParseFromString(data)
             message_type = message.WhichOneof('branch_message')
-            print('message_type: {}'.format(message_type))
+            # print('message_type: {}'.format(message_type))
             if message_type == 'init_branch':
                 bank.init_branch(message.init_branch)
             elif message_type == 'transfer':
