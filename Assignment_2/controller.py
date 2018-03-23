@@ -49,6 +49,20 @@ def initialize_bank(money, branches_file):
             sockets.append((sock, branch.port))
             message_socket(sock, message)
 
+def initialize_sockets(branches_file):
+    with open(branches_file, 'r') as f:
+        branches = [line.split() for line in f]
+        for branch_arr in branches:
+            name = branch_arr[0]
+            ip = branch_arr[1]
+            port = int(branch_arr[2])
+            print(name)
+            print(ip)
+            print(port)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect((ip, port))
+            sockets.append((sock, port))
+
 def initialize_snapshot(snapshot_id):
     init = bank_pb2.InitSnapshot()
     init.snapshot_id = snapshot_id
@@ -57,6 +71,33 @@ def initialize_snapshot(snapshot_id):
     print(message.WhichOneof('branch_message'))
     print('Starting on socket: {}'.format(sockets[0][1]))
     message_socket(sockets[0][0], message)
+
+def get_snapshot(snapshot_id, connections, money):
+    snapshots = []
+    retrieve = bank_pb2.RetrieveSnapshot()
+    retrieve.snapshot_id = snapshot_id
+    message = bank_pb2.BranchMessage()
+    message.retrieve_snapshot.MergeFrom(retrieve)
+    total = 0
+    for sock in connections:
+        print('Port: {}'.format(sock[1]))
+        message_socket(sock[0], message)
+        initial_data = sock[0].recv(2)
+        data_size = struct.unpack('H', initial_data)[0]
+        data = sock[0].recv(data_size)
+        rec_message = bank_pb2.BranchMessage()
+        rec_message.ParseFromString(data)
+        assert rec_message.WhichOneof('branch_message') == 'return_snapshot'
+        local_snapshot = rec_message.return_snapshot.local_snapshot
+        print('Balance: {}'.format(local_snapshot.balance))
+        print('channel_states: ')
+        print(local_snapshot.channel_state)
+        total += local_snapshot.balance
+        for amt in local_snapshot.channel_state:
+            total += amt
+    print('Total: {}'.format(total))
+    print('')
+    assert total == money
 
 # def transfer_money():
     
@@ -68,10 +109,20 @@ if __name__ == '__main__':
         sys.exit(-1)
     else:
         print(snapshot_id)
-        initialize_bank(int(sys.argv[1]), sys.argv[2])
+        init_amt = int(sys.argv[1])
+        initialize_bank(init_amt, sys.argv[2])
+        # initialize_sockets(sys.argv[2])
         time.sleep(3)
-        initialize_snapshot(snapshot_id)
-        snapshot_id = snapshot_id + 1
+        for x in range(200):
+            initialize_snapshot(x)
+        for x in range(200):
+            time.sleep(1)
+            get_snapshot(x, sockets, init_amt)
+        # while snapshot_id < 50:
+        #     initialize_snapshot(snapshot_id)
+        #     time.sleep(3)
+        #     get_snapshot(snapshot_id, sockets)
+        #     snapshot_id = snapshot_id + 1
         
     # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # try:
