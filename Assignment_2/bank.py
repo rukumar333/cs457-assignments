@@ -37,7 +37,7 @@ class Bank(object):
 
     def send_money(self):
         while True:
-            time_to_sleep = random.uniform(0, 0.01)
+            time_to_sleep = random.uniform(0, 5)
             print('Sleeping for: {}'.format(time_to_sleep))
             time.sleep(time_to_sleep)
             socket_index = random.randint(0, len(self.sockets) - 1)
@@ -165,7 +165,6 @@ class Bank(object):
         print(len(message_string))
         client.write(struct.pack('H', len(message_string)))
         client.write(message_string)
-
 
     def return_snapshot(self, message):
         print('return_snapshot')

@@ -7,16 +7,6 @@ import time
 
 import bank_pb2
 
-# def write_to_socket(sock):
-#     transfer = bank_pb2.Transfer()
-#     transfer.money = 10
-#     transfer.branch_name = '127.0.0.1:9091'
-#     message = bank_pb2.BranchMessage()
-#     message.transfer.MergeFrom(transfer)
-#     message_string = message.SerializeToString()
-#     sock.sendall(struct.pack('H', len(message_string)))
-#     sock.sendall(message_string)
-
 snapshot_id = 0
 sockets = []
 
@@ -26,9 +16,7 @@ def get_branch_index(name):
             return i
 
 def message_socket(sock, message):
-    # print('Messaging socket')
     message_string = message.SerializeToString()
-    # print(len(message_string))
     sock.sendall(struct.pack('H', len(message_string)))
     sock.sendall(message_string)
 
@@ -111,17 +99,10 @@ def get_snapshot(snapshot_id, connections, money):
                 amt = local_snapshot.channel_state[i]
                 total += amt
                 result_str += '{}->{}: {}, '.format(connections[i][1], sock[1], amt)
-        # for amt in local_snapshot.channel_state:
-        #     result_str += '{}->{}: {}, '.format(, sock[1], amt)
-        #     total += amt
         print(result_str)
     print('Total: {}'.format(total))
     print('')
     assert total == money
-
-# def transfer_money():
-    
-        
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
@@ -147,12 +128,3 @@ if __name__ == '__main__':
         #     time.sleep(3)
         #     get_snapshot(snapshot_id, sockets)
         #     snapshot_id = snapshot_id + 1
-        
-    # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # try:
-    #     sock.connect(('127.0.0.1', 9090))
-    #     write_to_socket(sock)
-    #     # sock.sendall('Hello world!\n')
-    #     # received = sock.recv(1024)
-    # finally:
-    #     sock.close()
