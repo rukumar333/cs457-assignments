@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import random
 import socket
 import struct
 import sys
@@ -7,7 +8,7 @@ import time
 
 import bank_pb2
 
-snapshot_id = 0
+# snapshot_id = 0
 sockets = []
 
 def get_branch_index(name):
@@ -56,14 +57,14 @@ def initialize_sockets(branches_file):
             sock.connect((ip, port))
             sockets.append((sock, name))
 
-def initialize_snapshot(snapshot_id):
+def initialize_snapshot(snapshot_id, sock):
     init = bank_pb2.InitSnapshot()
     init.snapshot_id = snapshot_id
     message = bank_pb2.BranchMessage()
     message.init_snapshot.MergeFrom(init)
     print(message.WhichOneof('branch_message'))
-    print('Starting on socket: {}'.format(sockets[0][1]))
-    message_socket(sockets[0][0], message)
+    print('Starting snapshot on: {}'.format(sock[1]))
+    message_socket(sock[0], message)
 
 def get_snapshot(snapshot_id, connections, money):
     snapshots = []
@@ -75,7 +76,6 @@ def get_snapshot(snapshot_id, connections, money):
     print('snapshot_id: {}'.format(snapshot_id))
     for sock in connections:
         result_str = ''
-        # print('Port: {}'.format(sock[1]))
         # Message server
         message_socket(sock[0], message)
         # Read returned snapshot
@@ -88,11 +88,9 @@ def get_snapshot(snapshot_id, connections, money):
         local_snapshot = rec_message.return_snapshot.local_snapshot
         # Get initial balance
         result_str += '{}: {}, '.format(sock[1], local_snapshot.balance)
-        # print('{}: {}'.format(sock[1], local_snapshot.balance))
-        if not all(x == 0 for x in local_snapshot.channel_state):
-            # print()
-            print('channel_states: ')
-            print(local_snapshot.channel_state)
+        # if not all(x == 0 for x in local_snapshot.channel_state):
+        #     print('channel_states: ')
+        #     print(local_snapshot.channel_state)
         total += local_snapshot.balance
         for i in range(len(local_snapshot.channel_state)):
             if i != get_branch_index(sock[1]):
@@ -109,20 +107,31 @@ if __name__ == '__main__':
         print('Need more arguments')
         sys.exit(-1)
     else:
-        offset = 0
-        consec_reqs = 100
-        print(snapshot_id)
+        snapshot_id = 0
         init_amt = int(sys.argv[1])
         initialize_bank(init_amt, sys.argv[2])
-        # initialize_sockets(sys.argv[2])
-        while offset < 10000:
+        time.sleep(5)
+        while True:
+            time.sleep(random.uniform(0, 10))
+            socket_index = random.randint(0, len(sockets) - 1)
+            initialize_snapshot(snapshot_id, sockets[socket_index])
             time.sleep(5)
-            for x in range(consec_reqs):
-                initialize_snapshot(x + offset)
-            time.sleep(25)
-            for x in range(consec_reqs):
-                get_snapshot(x + offset, sockets, init_amt)
-            offset += consec_reqs
+            get_snapshot(snapshot_id, sockets, init_amt)
+            snapshot_id += 1
+        # offset = 0
+        # consec_reqs = 100
+        # print(snapshot_id)
+        # init_amt = int(sys.argv[1])
+        # initialize_bank(init_amt, sys.argv[2])
+        # # initialize_sockets(sys.argv[2])
+        # while offset < 10000:
+        #     time.sleep(5)
+        #     for x in range(consec_reqs):
+        #         initialize_snapshot(x + offset)
+        #     time.sleep(25)
+        #     for x in range(consec_reqs):
+        #         get_snapshot(x + offset, sockets, init_amt)
+        #     offset += consec_reqs
         # while snapshot_id < 50:
         #     initialize_snapshot(snapshot_id)
         #     time.sleep(3)
