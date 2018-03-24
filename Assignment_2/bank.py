@@ -62,6 +62,37 @@ class Bank(object):
             if name == self.branches[i].name:
                 return i
 
+    def handle_snapshot(self, message, initial=True):
+        print('snapshot_id: {}'.format(message.snapshot_id))
+        if not initial:
+            print('From: {}'.format(message.branch_name))
+        # Set marker
+        marker = bank_pb2.Marker()
+        marker.branch_name = self.name
+        marker.snapshot_id = message.snapshot_id
+        # Create local snapshot to send later
+        stored_snapshot = bank_pb2.ReturnSnapshot()
+        stored_snapshot.local_snapshot.snapshot_id = message.snapshot_id
+        # Set balance of local snapshot and default value channel_states
+        stored_snapshot.local_snapshot.balance = self.balance
+        stored_snapshot.local_snapshot.channel_state[:] = [0 for _ in range(len(self.branches))]
+        print('Initial channel_state')
+        print(stored_snapshot.local_snapshot.channel_state)
+        # Store local snapshot which means it has seen snapshot_id
+        self.snapshots[message.snapshot_id] = (stored_snapshot, True)
+        self.channel_states[message.snapshot_id] = [0 for _ in range(len(self.branches))]
+        if not initial:
+            incoming_channel_index = self.get_branch_index(message.branch_name)
+            # Set incoming channel as empty for snapshot
+            self.channel_states[message.snapshot_id][incoming_channel_index] = None
+        new_message = bank_pb2.BranchMessage()
+        new_message.marker.MergeFrom(marker)
+        for sock in self.sockets:
+            sock[1].acquire()
+            self.message_socket(sock[0], new_message)
+            sock[1].release()
+        # self.balance_mutex.release()
+
     # Message funcs
     def init_branch(self, message):
         print('init_branch')
@@ -98,27 +129,7 @@ class Bank(object):
     def init_snapshot(self, message):
         print('snapshot_id: {}'.format(message.snapshot_id))
         self.balance_mutex.acquire()
-        # Set marker
-        marker = bank_pb2.Marker()
-        marker.branch_name = self.name
-        marker.snapshot_id = message.snapshot_id
-        # Create local snapshot to send later
-        stored_snapshot = bank_pb2.ReturnSnapshot()
-        stored_snapshot.local_snapshot.snapshot_id = message.snapshot_id
-        # Set balance of local snapshot and default value channel_states
-        stored_snapshot.local_snapshot.balance = self.balance
-        stored_snapshot.local_snapshot.channel_state[:] = [0 for _ in range(len(self.branches))]
-        print('Initial channel_state')
-        print(stored_snapshot.local_snapshot.channel_state)
-        # Store local snapshot which means it has seen snapshot_id
-        self.snapshots[message.snapshot_id] = (stored_snapshot, True)
-        self.channel_states[message.snapshot_id] = [0 for _ in range(len(self.branches))]
-        new_message = bank_pb2.BranchMessage()
-        new_message.marker.MergeFrom(marker)
-        for sock in self.sockets:
-            sock[1].acquire()
-            self.message_socket(sock[0], new_message)
-            sock[1].release()
+        self.handle_snapshot(message)
         self.balance_mutex.release()
 
     def marker(self, message):
@@ -138,32 +149,7 @@ class Bank(object):
             self.balance_mutex.release()
         else:
             # First time seeing snapshot_id
-            print('snapshot_id: {}'.format(message.snapshot_id))
-            print('From: {}'.format(message.branch_name))
-            # Set marker
-            marker = bank_pb2.Marker()
-            marker.branch_name = self.name
-            marker.snapshot_id = message.snapshot_id
-            # Create local snapshot to send later
-            stored_snapshot = bank_pb2.ReturnSnapshot()
-            stored_snapshot.local_snapshot.snapshot_id = message.snapshot_id
-            # Set balance of local snapshot and default value channel_states
-            stored_snapshot.local_snapshot.balance = self.balance
-            stored_snapshot.local_snapshot.channel_state[:] = [0 for _ in range(len(self.branches))]
-            print('Initial channel_state')
-            print(stored_snapshot.local_snapshot.channel_state)
-            # Store local snapshot which means it has seen snapshot_id
-            self.snapshots[message.snapshot_id] = (stored_snapshot, True)
-            self.channel_states[message.snapshot_id] = [0 for _ in range(len(self.branches))]
-            incoming_channel_index = self.get_branch_index(message.branch_name)
-            # Set incoming channel as empty for snapshot
-            self.channel_states[message.snapshot_id][incoming_channel_index] = None
-            new_message = bank_pb2.BranchMessage()
-            new_message.marker.MergeFrom(marker)
-            for sock in self.sockets:
-                sock[1].acquire()
-                self.message_socket(sock[0], new_message)
-                sock[1].release()
+            self.handle_snapshot(message, False)
             self.balance_mutex.release()
 
     def retrieve_snapshot(self, message, client):
