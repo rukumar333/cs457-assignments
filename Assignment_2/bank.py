@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import glob
 import logging
 import random
 import SocketServer
@@ -14,6 +15,10 @@ import bank_pb2
 logging.basicConfig(level=logging.DEBUG)
 
 LOG_TO_FILE = True
+
+add_path = glob.glob('/home/vchaska1/protobuf/protobuf-3.5.1/python')
+if len(add_path) > 0:
+    sys.path.append(add_path[0])
 
 bank = None
 

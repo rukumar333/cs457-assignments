@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import glob
 import random
 import socket
 import struct
@@ -7,6 +8,10 @@ import sys
 import time
 
 import bank_pb2
+
+add_path = glob.glob('/home/vchaska1/protobuf/protobuf-3.5.1/python')
+if len(add_path) > 0:
+    sys.path.append(add_path[0])
 
 # snapshot_id = 0
 sockets = []
