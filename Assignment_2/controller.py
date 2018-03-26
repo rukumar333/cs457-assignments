@@ -29,7 +29,8 @@ def message_socket(sock, message):
 def initialize_bank(money, branches_file):
     with open(branches_file, 'r') as f:
         branches = [line.split() for line in f]
-        branch_money = money / len(branches)
+        branch_money = int(money / len(branches))
+        remainder = money - (branch_money * len(branches))
         init = bank_pb2.InitBranch()
         init.balance = branch_money
         for branch_arr in branches:
@@ -46,7 +47,13 @@ def initialize_bank(money, branches_file):
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.connect((branch.ip, branch.port))
             sockets.append((sock, branch.name))
-            message_socket(sock, message)
+            if remainder == 0:
+                message.init_branch.balance = branch_money
+                message_socket(sock, message)
+            else:
+                message.init_branch.balance = branch_money + remainder
+                message_socket(sock, message)
+                remainder = 0
 
 def initialize_sockets(branches_file):
     with open(branches_file, 'r') as f:
