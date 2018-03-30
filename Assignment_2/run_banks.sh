@@ -1,6 +1,6 @@
 #!/usr/bin/zsh
 
-./bank.py branch0 9090&
-./bank.py branch1 9091&
-./bank.py branch2 9092&
-./bank.py branch3 9093&
+./branch branch0 9090&
+./branch branch1 9091&
+./branch branch2 9092&
+./branch branch3 9093&
