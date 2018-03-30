@@ -210,6 +210,8 @@ if __name__ == '__main__':
     if LOG_TO_FILE:
         file_stdout = open('log_{}.txt'.format(port), 'w', 0)
         sys.stdout = file_stdout
+    # else:
+    #     sys.stdout = None
     bank = Bank(name)
     server = SocketServer.ThreadingTCPServer((host, port), BankTCPHandler)
     # server = SocketServer.TCPServer((host, port), BankTCPHandler)

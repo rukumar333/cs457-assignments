@@ -130,22 +130,3 @@ if __name__ == '__main__':
             time.sleep(5)
             get_snapshot(snapshot_id, sockets, init_amt)
             snapshot_id += 1
-        # offset = 0
-        # consec_reqs = 100
-        # print(snapshot_id)
-        # init_amt = int(sys.argv[1])
-        # initialize_bank(init_amt, sys.argv[2])
-        # # initialize_sockets(sys.argv[2])
-        # while offset < 10000:
-        #     time.sleep(5)
-        #     for x in range(consec_reqs):
-        #         initialize_snapshot(x + offset)
-        #     time.sleep(25)
-        #     for x in range(consec_reqs):
-        #         get_snapshot(x + offset, sockets, init_amt)
-        #     offset += consec_reqs
-        # while snapshot_id < 50:
-        #     initialize_snapshot(snapshot_id)
-        #     time.sleep(3)
-        #     get_snapshot(snapshot_id, sockets)
-        #     snapshot_id = snapshot_id + 1
