@@ -2,6 +2,13 @@
 
 Language used: python2
 
+## Google Protobuf
+
+Compile the bank.proto file using:
+```bash
+protoc --python_out=./ bank.proto
+```
+
 ## Branch
 
 Contained in the python script bank.py which has a wrapper shell script branch.
