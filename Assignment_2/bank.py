@@ -207,7 +207,7 @@ if __name__ == '__main__':
         name = sys.argv[1]
         port = int(sys.argv[2])
     if LOG_TO_FILE:
-        file_stdout = open('log_{}.txt'.format(port), 'w', 0)
+        file_stdout = open('log_{}_{}.txt'.format(host, port), 'w', 0)
         sys.stdout = file_stdout
     bank = Bank(name)
     server = SocketServer.ThreadingTCPServer((host, port), BankTCPHandler)
