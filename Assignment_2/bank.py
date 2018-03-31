@@ -185,7 +185,6 @@ class BankTCPHandler(SocketServer.StreamRequestHandler):
             message = bank_pb2.BranchMessage()
             message.ParseFromString(data)
             message_type = message.WhichOneof('branch_message')
-            # print('message_type: {}'.format(message_type))
             if message_type == 'init_branch':
                 bank.init_branch(message.init_branch)
             elif message_type == 'transfer':
@@ -210,9 +209,6 @@ if __name__ == '__main__':
     if LOG_TO_FILE:
         file_stdout = open('log_{}.txt'.format(port), 'w', 0)
         sys.stdout = file_stdout
-    # else:
-    #     sys.stdout = None
     bank = Bank(name)
     server = SocketServer.ThreadingTCPServer((host, port), BankTCPHandler)
-    # server = SocketServer.TCPServer((host, port), BankTCPHandler)
     server.serve_forever()
