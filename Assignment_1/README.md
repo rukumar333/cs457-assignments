@@ -9,6 +9,10 @@ This Python program creates a distributed hash table using a Chord system. Apach
 * thrift pip package
 
 ## Set up
+* Install python dependencies
+```bash
+$ pip install -r requirements.txt
+```
 * Generate gen-py using chord.thrift:
 ```bash
 $ thrift -r -gen py chord.thrift
